@@ -84,7 +84,7 @@ def create_avamar(username, machine_name, image, network, ip_config, logger):
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER,
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         image_name = convert_name(image)
-        logger.info(image_name)
+        logger.info('Deploying image %s', image_name)
         ova = Ova(os.path.join(const.VLAB_AVAMAR_IMAGES_DIR, image_name))
         try:
             network_map = vim.OvfManager.NetworkMapping()
@@ -101,12 +101,16 @@ def create_avamar(username, machine_name, image, network, ip_config, logger):
                                                      logger=logger)
         finally:
             ova.close()
+        logger.info('Blocking while VM boots')
         # For whatever reason, we have to power on the machine before vSphere
         # will recognize that VMware Tools is installed. From that point, we
         # can then power off the machine to configure the network. Fun, right?
-        _block_on_vmware_tools(the_vm)
+        _block_on_boot(the_vm)
+        logger.info("Powering Off VM")
         virtual_machine.power(the_vm, state='off')
+        logger.info("Configuring Network")
         _configure_network(the_vm, ip_config)
+        logger.info("Powering on VM")
         virtual_machine.power(the_vm, state='on')
         meta_data = {'component' : "Avamar",
                      'created' : time.time(),
@@ -169,8 +173,12 @@ def _configure_network(the_vm, ip_config):
     consume_task(task)
 
 
-def _block_on_vmware_tools(the_vm):
+def _block_on_boot(the_vm):
     ready = the_vm.guest.toolsStatus == vim.vm.GuestInfo.ToolsStatus.toolsOk
     while not ready:
         time.sleep(1)
         ready = the_vm.guest.toolsStatus == vim.vm.GuestInfo.ToolsStatus.toolsOk
+    # Fun fact - it's still booting. If we don't let it fully boot, then the
+    # for whatever reason the network changes will be tossed out. Thanks Avamar!
+    # So, let's just do a dumb long sleep and hope :(
+    time.sleep(300)
