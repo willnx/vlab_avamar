@@ -3,7 +3,7 @@
 A suite of tests for the functions in vmware.py
 """
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, PropertyMock
 
 from vlab_avamar_api.lib.worker import vmware
 
@@ -79,6 +79,7 @@ class TestVMware(unittest.TestCase):
         with self.assertRaises(ValueError):
             vmware.delete_avamar(username='bob', machine_name='myOtherAvamarBox', logger=fake_logger)
 
+    @patch.object(vmware, '_block_on_vmware_tools')
     @patch.object(vmware, '_configure_network')
     @patch.object(vmware.virtual_machine, 'set_meta')
     @patch.object(vmware, 'Ova')
@@ -86,7 +87,8 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware.virtual_machine, 'deploy_from_ova')
     @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'vCenter')
-    def test_create_avamar(self, fake_vCenter, fake_consume_task, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_set_meta, fake__configure_network):
+    def test_create_avamar(self, fake_vCenter, fake_consume_task, fake_deploy_from_ova, fake_get_info,
+                           fake_Ova, fake_set_meta, fake__configure_network, fake_block_on_vmware_tools):
         """``create_avamar`` returns a dictionary upon success"""
         fake_logger = MagicMock()
         fake_deploy_from_ova.return_value.name = 'myAvamar'
@@ -175,6 +177,18 @@ class TestVMware(unittest.TestCase):
         vmware._configure_network(the_vm, ip_config)
 
         self.assertTrue(fake_consume_task.called)
+
+    @patch.object(vmware.time, 'sleep')
+    def test_block_on_vmware_tools(self, fake_sleep):
+        """``_block_on_vmware_tools`` waits for VMware Tools to be ready"""
+        the_vm = MagicMock()
+        toolsStatus = PropertyMock(side_effect=['notready', vmware.vim.vm.GuestInfo.ToolsStatus.toolsOk])
+        type(the_vm.guest).toolsStatus = toolsStatus
+
+        vmware._block_on_vmware_tools(the_vm)
+
+        self.assertTrue(fake_sleep.called)
+
 
 
 if __name__ == '__main__':

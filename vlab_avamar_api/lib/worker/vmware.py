@@ -98,11 +98,14 @@ def create_avamar(username, machine_name, image, network, ip_config, logger):
                                                      network_map=[network_map],
                                                      username=username,
                                                      machine_name=machine_name,
-                                                     logger=logger,
-                                                     power_on=False)
+                                                     logger=logger)
         finally:
             ova.close()
-
+        # For whatever reason, we have to power on the machine before vSphere
+        # will recognize that VMware Tools is installed. From that point, we
+        # can then power off the machine to configure the network. Fun, right?
+        _block_on_vmware_tools(the_vm)
+        virtual_machine.power(the_vm, state='off')
         _configure_network(the_vm, ip_config)
         virtual_machine.power(the_vm, state='on')
         meta_data = {'component' : "Avamar",
@@ -164,3 +167,10 @@ def _configure_network(the_vm, ip_config):
     spec.identity = ident
     task = the_vm.Customize(spec=spec)
     consume_task(task)
+
+
+def _block_on_vmware_tools(the_vm):
+    ready = the_vm.guest.toolsStatus == vim.vm.GuestInfo.ToolsStatus.toolsOk
+    while not ready:
+        time.sleep(1)
+        ready = the_vm.guest.toolsStatus == vim.vm.GuestInfo.ToolsStatus.toolsOk
