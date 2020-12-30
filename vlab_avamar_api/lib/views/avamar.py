@@ -112,7 +112,12 @@ class AvamarView(MachineView):
         body = kwargs['body']
         machine_name = body['name']
         image = body['image']
-        ip_config = body['ip-config']
+        # Set the defaults for the ip-config defined by the POST_SCHEMA
+        ip_config = {'default-gateway': '192.168.1.1',
+                     'netmask': '255.255.255.0',
+                     'dns': ['192.168.1.1.'],
+                     'domain': "vlab.local"}
+        ip_config.update(body['ip-config'])
         network = '{}_{}'.format(username, body['network'])
         task = current_app.celery_app.send_task('avamar.create', [username, machine_name, image, network, ip_config, txn_id])
         resp_data['content'] = {'task-id': task.id}
