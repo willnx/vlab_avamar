@@ -134,7 +134,7 @@ def show_ndmp(self, username, txn_id):
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        info = vmware.show_avamar(username, kind='AvarmarNDMP')
+        info = vmware.show_avamar(username, kind='AvamarNDMP')
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
@@ -172,7 +172,7 @@ def create_ndmp(self, username, machine_name, image, network, ip_config, txn_id)
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        resp['content'] = vmware.create_avamar(username, machine_name, image, network, ip_config, logger, kind='AvarmarNDMP')
+        resp['content'] = vmware.create_avamar(username, machine_name, image, network, ip_config, logger, kind='AvamarNDMP')
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
@@ -199,7 +199,7 @@ def delete_ndmp(self, username, machine_name, txn_id):
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        vmware.delete_avamar(username, machine_name, logger, kind='AvarmarNDMP')
+        vmware.delete_avamar(username, machine_name, logger, kind='AvamarNDMP')
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
@@ -221,6 +221,6 @@ def image_ndmp(self, txn_id):
     logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_AVAMAR_LOG_LEVEL.upper())
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
-    resp['content'] = {'image': vmware.list_images(kind='AvarmarNDMP')}
+    resp['content'] = {'image': vmware.list_images(kind='AvamarNDMP')}
     logger.info('Task complete')
     return resp
