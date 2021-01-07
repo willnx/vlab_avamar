@@ -17,11 +17,12 @@ logger = get_logger(__name__, loglevel=const.VLAB_AVAMAR_LOG_LEVEL)
 
 class AvamarView(MachineView):
     """API end points for managingin Avamar instances"""
-    route_base = '/api/2/inf/avamar'
-    RESOURCE = 'avamar'
+    route_base = '/api/2/inf/avamar/server'
+    RESOURCE = 'Avamar'
+    TASK_SUFFIX = 'server'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
-                    "description": "Create a avamar",
+                    "description": "Create an Avamar machine",
                     "properties": {
                         "name": {
                             "description": "The name to give your Avamar instance",
@@ -95,7 +96,7 @@ class AvamarView(MachineView):
         username = kwargs['token']['username']
         resp_data = {'user' : username}
         txn_id = request.headers.get('X-REQUEST-ID', 'noId')
-        task = current_app.celery_app.send_task('avamar.show', [username, txn_id])
+        task = current_app.celery_app.send_task('avamar.show_{}'.format(self.TASK_SUFFIX), [username, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -119,7 +120,7 @@ class AvamarView(MachineView):
                      'domain': "vlab.local"}
         ip_config.update(body['ip-config'])
         network = '{}_{}'.format(username, body['network'])
-        task = current_app.celery_app.send_task('avamar.create', [username, machine_name, image, network, ip_config, txn_id])
+        task = current_app.celery_app.send_task('avamar.create_{}'.format(self.TASK_SUFFIX), [username, machine_name, image, network, ip_config, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -134,7 +135,7 @@ class AvamarView(MachineView):
         txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         machine_name = kwargs['body']['name']
-        task = current_app.celery_app.send_task('avamar.delete', [username, machine_name, txn_id])
+        task = current_app.celery_app.send_task('avamar.delete_{}'.format(self.TASK_SUFFIX), [username, machine_name, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -149,9 +150,15 @@ class AvamarView(MachineView):
         username = kwargs['token']['username']
         txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
-        task = current_app.celery_app.send_task('avamar.image', [txn_id])
+        task = current_app.celery_app.send_task('avamar.image_{}'.format(self.TASK_SUFFIX), [txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
         resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
         return resp
+
+
+class AvamarNDMPView(AvamarView):
+    route_base = '/api/2/inf/avamar/ndmp-accelerator'
+    RESOURCE = 'AvamarNDMP'
+    TASK_SUFFIX = 'ndmp'
