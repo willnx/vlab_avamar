@@ -7,13 +7,16 @@ from vlab_inf_common.vmware import vCenter, Ova, vim, virtual_machine, consume_t
 from vlab_avamar_api.lib import const
 
 
-def show_avamar(username):
+def show_avamar(username, kind='Avamar'):
     """Obtain basic information about Avamar
 
     :Returns: Dictionary
 
-    :param username: The user requesting info about their Avamar
+    :param username: The user requesting info about their Avamar machines.
     :type username: String
+
+    :param kind: The type of Avamar machine (i.e. a normal server or an ndmp accelerator).
+    :type kind: String
     """
     info = {}
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
@@ -22,12 +25,12 @@ def show_avamar(username):
         avamar_vms = {}
         for vm in folder.childEntity:
             info = virtual_machine.get_info(vcenter, vm, username)
-            if info['meta']['component'] == 'Avamar':
+            if info['meta']['component'] == kind:
                 avamar_vms[vm.name] = info
     return avamar_vms
 
 
-def delete_avamar(username, machine_name, logger):
+def delete_avamar(username, machine_name, logger, kind='Avamar'):
     """Unregister and destroy a user's Avamar
 
     :Returns: None
@@ -40,6 +43,9 @@ def delete_avamar(username, machine_name, logger):
 
     :param logger: An object for logging messages
     :type logger: logging.LoggerAdapter
+
+    :param kind: The type of Avamar machine (i.e. a normal server or an ndmp accelerator).
+    :type kind: String
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
@@ -47,7 +53,7 @@ def delete_avamar(username, machine_name, logger):
         for entity in folder.childEntity:
             if entity.name == machine_name:
                 info = virtual_machine.get_info(vcenter, entity, username)
-                if info['meta']['component'] == 'Avamar':
+                if info['meta']['component'] == kind:
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
                     delete_task = entity.Destroy_Task()
@@ -55,10 +61,10 @@ def delete_avamar(username, machine_name, logger):
                     consume_task(delete_task)
                     break
         else:
-            raise ValueError('No {} named {} found'.format('avamar', machine_name))
+            raise ValueError('No {} named {} found'.format(kind, machine_name))
 
 
-def create_avamar(username, machine_name, image, network, ip_config, logger):
+def create_avamar(username, machine_name, image, network, ip_config, logger, kind='Avamar'):
     """Deploy a new instance of Avamar
 
     :Returns: Dictionary
@@ -80,11 +86,14 @@ def create_avamar(username, machine_name, image, network, ip_config, logger):
 
     :param logger: An object for logging messages
     :type logger: logging.LoggerAdapter
+
+    :param kind: The type of Avamar machine (i.e. a normal server or an ndmp accelerator).
+    :type kind: String
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER,
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
-        image_name = convert_name(image)
-        logger.info('Deploying image %s', image_name)
+        image_name = convert_name(image, kind)
+        logger.info('Deploying image %s %s', kind, image_name)
         ova = Ova(os.path.join(const.VLAB_AVAMAR_IMAGES_DIR, image_name))
         try:
             network_map = vim.OvfManager.NetworkMapping()
@@ -112,7 +121,7 @@ def create_avamar(username, machine_name, image, network, ip_config, logger):
         _configure_network(the_vm, ip_config)
         logger.info("Powering on VM")
         virtual_machine.power(the_vm, state='on')
-        meta_data = {'component' : "Avamar",
+        meta_data = {'component' : kind,
                      'created' : time.time(),
                      'version' : image,
                      'configured' : True,
@@ -122,17 +131,18 @@ def create_avamar(username, machine_name, image, network, ip_config, logger):
         return  {the_vm.name: info}
 
 
-def list_images():
+def list_images(kind='Avamar'):
     """Obtain a list of available versions of Avamar that can be created
 
     :Returns: List
     """
+    prefix = _kind_to_prefix(kind)
     images = os.listdir(const.VLAB_AVAMAR_IMAGES_DIR)
-    images = [convert_name(x, to_version=True) for x in images]
+    images = [convert_name(x, kind, to_version=True) for x in images if x.startswith(prefix)]
     return images
 
 
-def convert_name(name, to_version=False):
+def convert_name(name, kind, to_version=False):
     """This function centralizes converting between the name of the OVA, and the
     version of software it contains.
 
@@ -142,10 +152,19 @@ def convert_name(name, to_version=False):
     :param to_version: Set to True to covert the name of an OVA to the version
     :type to_version: Boolean
     """
+    prefix = _kind_to_prefix(kind)
     if to_version:
         return name.split('-')[-1].replace('.ova', '')
     else:
-        return 'AVE-{}.ova'.format(name)
+        return '{}-{}.ova'.format(prefix, name)
+
+
+def _kind_to_prefix(kind):
+    if kind == 'Avamar':
+        prefix = 'AVE'
+    else:
+        prefix = 'NDMP'
+    return prefix
 
 
 def _configure_network(the_vm, ip_config):

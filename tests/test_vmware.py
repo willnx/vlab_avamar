@@ -151,14 +151,28 @@ class TestVMware(unittest.TestCase):
 
     def test_convert_name(self):
         """``convert_name`` - defaults to converting to the OVA file name"""
-        output = vmware.convert_name(name='1.0.0')
+        output = vmware.convert_name(name='1.0.0', kind='Avamar')
         expected = 'AVE-1.0.0.ova'
 
         self.assertEqual(output, expected)
 
     def test_convert_name_to_version(self):
         """``convert_name`` - can take a OVA file name, and extract the version from it"""
-        output = vmware.convert_name('AVE-19.1.0.38.ova', to_version=True)
+        output = vmware.convert_name('AVE-19.1.0.38.ova', kind='Avamar', to_version=True)
+        expected = '19.1.0.38'
+
+        self.assertEqual(output, expected)
+
+    def test_convert_name_ndmp(self):
+        """``convert_name`` - defaults to converting to the OVA file name"""
+        output = vmware.convert_name(name='1.0.0', kind='AvamarNDMP')
+        expected = 'NDMP-1.0.0.ova'
+
+        self.assertEqual(output, expected)
+
+    def test_convert_name_to_version_ndmp(self):
+        """``convert_name`` - can take a OVA file name, and extract the version from it"""
+        output = vmware.convert_name('AVE-19.1.0.38.ova', kind='AvamarNDMP', to_version=True)
         expected = '19.1.0.38'
 
         self.assertEqual(output, expected)

@@ -31,6 +31,7 @@ class TestAvamarView(unittest.TestCase):
         """Runs before every test case"""
         app = Flask(__name__)
         avamar.AvamarView.register(app)
+        avamar.AvamarNDMPView.register(app)
         app.config['TESTING'] = True
         cls.app = app.test_client()
         # Mock Celery
@@ -40,8 +41,8 @@ class TestAvamarView(unittest.TestCase):
         app.celery_app.send_task.return_value = cls.fake_task
 
     def test_v1_deprecated(self):
-        """AvamarView - GET on /api/1/inf/avamar/server returns an HTTP 404"""
-        resp = self.app.get('/api/1/inf/avamar/server',
+        """AvamarView - GET on /api/1/inf/avamar/ndmp-accelerator returns an HTTP 404"""
+        resp = self.app.get('/api/1/inf/avamar/ndmp-accelerator',
                             headers={'X-Auth': self.token})
 
         status = resp.status_code
@@ -50,8 +51,8 @@ class TestAvamarView(unittest.TestCase):
         self.assertEqual(status, expected)
 
     def test_get_task(self):
-        """AvamarView - GET on /api/2/inf/avamar/server returns a task-id"""
-        resp = self.app.get('/api/2/inf/avamar/server',
+        """AvamarView - GET on /api/2/inf/avamar/ndmp-accelerator returns a task-id"""
+        resp = self.app.get('/api/2/inf/avamar/ndmp-accelerator',
                             headers={'X-Auth': self.token})
 
         task_id = resp.json['content']['task-id']
@@ -60,18 +61,18 @@ class TestAvamarView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_get_task_link(self):
-        """AvamarView - GET on /api/2/inf/avamar/server sets the Link header"""
-        resp = self.app.get('/api/2/inf/avamar/server',
+        """AvamarView - GET on /api/2/inf/avamar/ndmp-accelerator sets the Link header"""
+        resp = self.app.get('/api/2/inf/avamar/ndmp-accelerator',
                             headers={'X-Auth': self.token})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/2/inf/avamar/server/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/avamar/ndmp-accelerator/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_post_task(self):
-        """AvamarView - POST on /api/2/inf/avamar/server returns a task-id"""
-        resp = self.app.post('/api/2/inf/avamar/server',
+        """AvamarView - POST on /api/2/inf/avamar/ndmp-accelerator returns a task-id"""
+        resp = self.app.post('/api/2/inf/avamar/ndmp-accelerator',
                              headers={'X-Auth': self.token},
                              json={'network': "someLAN",
                                    'name': "myAvamarBox",
@@ -84,8 +85,8 @@ class TestAvamarView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_post_task_link(self):
-        """AvamarView - POST on /api/2/inf/avamar/server sets the Link header"""
-        resp = self.app.post('/api/2/inf/avamar/server',
+        """AvamarView - POST on /api/2/inf/avamar/ndmp-accelerator sets the Link header"""
+        resp = self.app.post('/api/2/inf/avamar/ndmp-accelerator',
                              headers={'X-Auth': self.token},
                              json={'network': "someLAN",
                                    'name': "myAvamarBox",
@@ -93,13 +94,13 @@ class TestAvamarView(unittest.TestCase):
                                    'ip-config': self.ip_config})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/2/inf/avamar/server/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/avamar/ndmp-accelerator/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_delete_task(self):
-        """AvamarView - DELETE on /api/2/inf/avamar/server returns a task-id"""
-        resp = self.app.delete('/api/2/inf/avamar/server',
+        """AvamarView - DELETE on /api/2/inf/avamar/ndmp-accelerator returns a task-id"""
+        resp = self.app.delete('/api/2/inf/avamar/ndmp-accelerator',
                                headers={'X-Auth': self.token},
                                json={'name' : 'myAvamarBox'})
 
@@ -109,19 +110,19 @@ class TestAvamarView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_delete_task_link(self):
-        """AvamarView - DELETE on /api/2/inf/avamar/server sets the Link header"""
-        resp = self.app.delete('/api/2/inf/avamar/server',
+        """AvamarView - DELETE on /api/2/inf/avamar/ndmp-accelerator sets the Link header"""
+        resp = self.app.delete('/api/2/inf/avamar/ndmp-accelerator',
                                headers={'X-Auth': self.token},
                                json={'name' : 'myAvamarBox'})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/2/inf/avamar/server/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/avamar/ndmp-accelerator/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_image(self):
         """AvamarView - GET on the ./image end point returns the a task-id"""
-        resp = self.app.get('/api/2/inf/avamar/server/image',
+        resp = self.app.get('/api/2/inf/avamar/ndmp-accelerator/image',
                             headers={'X-Auth': self.token})
 
         task_id = resp.json['content']['task-id']
@@ -131,11 +132,11 @@ class TestAvamarView(unittest.TestCase):
 
     def test_image(self):
         """AvamarView - GET on the ./image end point sets the Link header"""
-        resp = self.app.get('/api/2/inf/avamar/server/image',
+        resp = self.app.get('/api/2/inf/avamar/ndmp-accelerator/image',
                             headers={'X-Auth': self.token})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/2/inf/avamar/server/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/avamar/ndmp-accelerator/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
