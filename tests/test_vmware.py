@@ -79,6 +79,7 @@ class TestVMware(unittest.TestCase):
         with self.assertRaises(ValueError):
             vmware.delete_avamar(username='bob', machine_name='myOtherAvamarBox', logger=fake_logger)
 
+    @patch.object(vmware.virtual_machine, 'add_vmdk')
     @patch.object(vmware, '_block_on_boot')
     @patch.object(vmware, '_configure_network')
     @patch.object(vmware.virtual_machine, 'set_meta')
@@ -88,7 +89,7 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'vCenter')
     def test_create_avamar(self, fake_vCenter, fake_consume_task, fake_deploy_from_ova, fake_get_info,
-                           fake_Ova, fake_set_meta, fake__configure_network, fake_block_on_boot):
+                           fake_Ova, fake_set_meta, fake__configure_network, fake_block_on_boot, fake_add_vmdk):
         """``create_avamar`` returns a dictionary upon success"""
         fake_logger = MagicMock()
         fake_deploy_from_ova.return_value.name = 'myAvamar'

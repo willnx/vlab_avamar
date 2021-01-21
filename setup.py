@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 setup(name="vlab-avamar-api",
       author="Nicholas Willhite,",
       author_email='willnx84@gmail.com',
-      version='2020.12.30',
+      version='2021.01.21',
       packages=find_packages(),
       include_package_data=True,
       package_files={'vlab_avamar_api' : ['app.ini']},

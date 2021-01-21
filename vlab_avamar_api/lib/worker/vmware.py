@@ -93,7 +93,7 @@ def create_avamar(username, machine_name, image, network, ip_config, logger, kin
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER,
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         image_name = convert_name(image, kind)
-        logger.info('Deploying image %s %s', kind, image_name)
+        logger.info('Deploying %s server named % running %s', kind, machine_name, image_name)
         ova = Ova(os.path.join(const.VLAB_AVAMAR_IMAGES_DIR, image_name))
         try:
             network_map = vim.OvfManager.NetworkMapping()
@@ -119,6 +119,9 @@ def create_avamar(username, machine_name, image, network, ip_config, logger, kin
         virtual_machine.power(the_vm, state='off')
         logger.info("Configuring Network")
         _configure_network(the_vm, ip_config)
+        if kind == 'Avamar':
+            logger.info("Adding VMDK")
+            virtual_machine.add_vmdk(the_vm, disk_size=250) #GB
         logger.info("Powering on VM")
         virtual_machine.power(the_vm, state='on')
         meta_data = {'component' : kind,
